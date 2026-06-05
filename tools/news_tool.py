@@ -5,7 +5,7 @@ import os
 load_dotenv()
 
 client = TavilyClient(
-    api_key=os.getenv("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")
+    api_key=os.getenv("TAVILY_API_KEY")
 )
 
 def get_news(company):
