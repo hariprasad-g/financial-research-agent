@@ -88,22 +88,24 @@ def render_price_chart(history):
 """
 
 
-def format_inr(value):
+def format_money(value, symbol="$"):
     if value is None:
         return "Unavailable"
-    return f"₹{value:,.0f}"
+    return f"{symbol}{value:,.0f}"
 
 
-def render_sip_tab():
-    st.subheader("SIP Planner")
-    st.caption("Projection only. Fund selection should be based on risk profile, time horizon, costs, and tax situation.")
+def render_sip_tab(currency_symbol):
+    st.subheader("Recurring Investment Planner")
+    st.caption(
+        "Also called SIP in India or dollar-cost averaging in the US. Projection only; fund selection depends on risk profile, time horizon, costs, and taxes."
+    )
 
     starter_cols = st.columns(3)
     starter_monthly = starter_cols[0].number_input(
         "Starter monthly investment",
-        min_value=100,
+        min_value=10,
         value=1000,
-        step=100,
+        step=10,
     )
     starter_years = starter_cols[1].number_input(
         "Starter years",
@@ -122,9 +124,9 @@ def render_sip_tab():
 
     starter_value, starter_invested, _ = project_sip(starter_monthly, starter_years, starter_return, 0)
     starter_metric_cols = st.columns(3)
-    starter_metric_cols[0].metric("Starter Invested", format_inr(starter_invested))
-    starter_metric_cols[1].metric("Starter Value", format_inr(starter_value))
-    starter_metric_cols[2].metric("Starter Gains", format_inr(starter_value - starter_invested))
+    starter_metric_cols[0].metric("Starter Invested", format_money(starter_invested, currency_symbol))
+    starter_metric_cols[1].metric("Starter Value", format_money(starter_value, currency_symbol))
+    starter_metric_cols[2].metric("Starter Gains", format_money(starter_value - starter_invested, currency_symbol))
 
     comparison_rows = []
     for comparison_years in [5, 10, 15, 20]:
@@ -144,7 +146,7 @@ def render_sip_tab():
     st.divider()
 
     input_cols = st.columns(4)
-    monthly_amount = input_cols[0].number_input("Monthly SIP", min_value=500, value=25000, step=500)
+    monthly_amount = input_cols[0].number_input("Monthly investment", min_value=10, value=1000, step=10)
     years = input_cols[1].number_input("Years", min_value=1, max_value=40, value=15, step=1)
     annual_return = input_cols[2].number_input("Expected return", min_value=1.0, max_value=25.0, value=12.0, step=0.5)
     annual_step_up = input_cols[3].number_input("Annual step-up", min_value=0.0, max_value=25.0, value=5.0, step=0.5)
@@ -152,9 +154,9 @@ def render_sip_tab():
     projected_value, invested, sip_rows = project_sip(monthly_amount, years, annual_return, annual_step_up)
 
     metric_cols = st.columns(3)
-    metric_cols[0].metric("Invested", format_inr(invested))
-    metric_cols[1].metric("Projected Value", format_inr(projected_value))
-    metric_cols[2].metric("Estimated Gains", format_inr(projected_value - invested))
+    metric_cols[0].metric("Invested", format_money(invested, currency_symbol))
+    metric_cols[1].metric("Projected Value", format_money(projected_value, currency_symbol))
+    metric_cols[2].metric("Estimated Gains", format_money(projected_value - invested, currency_symbol))
 
     chart_cols = st.columns([3, 2])
     with chart_cols[0]:
@@ -164,22 +166,25 @@ def render_sip_tab():
 
     st.markdown(
         """
-**Useful SIP rules**
+**Useful recurring investment rules**
 
 - For long-term goals, diversified equity index or flexi-cap style funds are usually more suitable than narrow themes.
 - Prefer low expense ratio, consistent rolling returns, clean downside behavior, and an investment horizon of 5+ years.
-- Step-up SIPs often matter more than chasing the highest past return.
+- Increasing the monthly amount over time often matters more than chasing the highest past return.
+- In the US, this usually means automated recurring buys into ETFs, mutual funds, a 401(k), IRA, or brokerage account.
 """
     )
 
 
-def render_swp_tab():
-    st.subheader("SWP Planner")
-    st.caption("Projection only. SWP stability depends on market sequence risk, taxes, inflation, and withdrawal discipline.")
+def render_swp_tab(currency_symbol):
+    st.subheader("Withdrawal Planner")
+    st.caption(
+        "Also called SWP in India or a systematic withdrawal plan in retirement planning. Projection only; stability depends on sequence risk, taxes, inflation, and withdrawal discipline."
+    )
 
     input_cols = st.columns(5)
-    corpus = input_cols[0].number_input("Corpus", min_value=100000, value=5000000, step=100000)
-    monthly_withdrawal = input_cols[1].number_input("Monthly SWP", min_value=1000, value=40000, step=1000)
+    corpus = input_cols[0].number_input("Portfolio balance", min_value=1000, value=100000, step=1000)
+    monthly_withdrawal = input_cols[1].number_input("Monthly withdrawal", min_value=100, value=1000, step=100)
     years = input_cols[2].number_input("Projection years", min_value=1, max_value=40, value=20, step=1)
     annual_return = input_cols[3].number_input("Expected return ", min_value=1.0, max_value=20.0, value=8.0, step=0.5)
     inflation = input_cols[4].number_input("Withdrawal inflation", min_value=0.0, max_value=15.0, value=4.0, step=0.5)
@@ -189,8 +194,8 @@ def render_swp_tab():
     )
 
     metric_cols = st.columns(3)
-    metric_cols[0].metric("Total Withdrawn", format_inr(withdrawn))
-    metric_cols[1].metric("Ending Corpus", format_inr(ending_balance))
+    metric_cols[0].metric("Total Withdrawn", format_money(withdrawn, currency_symbol))
+    metric_cols[1].metric("Ending Portfolio", format_money(ending_balance, currency_symbol))
     if depleted_month:
         metric_cols[2].metric("Corpus Depleted", f"Month {depleted_month}")
     else:
@@ -212,11 +217,11 @@ def render_swp_tab():
 
     st.markdown(
         """
-**Useful SWP rules**
+**Useful withdrawal rules**
 
-- Keep 1-3 years of withdrawals in liquid or short-duration debt funds to reduce forced selling.
+- Keep 1-3 years of withdrawals in cash, money market, CDs, Treasuries, or short-duration bond funds to reduce forced selling.
 - Avoid withdrawing heavily from equity funds during deep drawdowns.
-- For regular income, combine debt allocation, conservative hybrid allocation, and periodic rebalancing.
+- For regular income, combine a conservative fixed-income allocation, equity exposure for growth, and periodic rebalancing.
 """
     )
 
@@ -310,7 +315,9 @@ def render_stock_research(symbol, period, run_analysis):
 st.title("Financial Research Agent")
 
 with st.sidebar:
-    tool = st.radio("Tool", ["Stock Research", "SIP Planner", "SWP Planner"])
+    tool = st.radio("Tool", ["Stock Research", "Recurring Investment", "Withdrawal Planner"])
+    currency = st.radio("Currency", ["USD", "INR"], horizontal=True)
+    currency_symbol = "$" if currency == "USD" else "₹"
 
     if tool == "Stock Research":
         st.header("Stock Research")
@@ -320,7 +327,7 @@ with st.sidebar:
 
 if tool == "Stock Research":
     render_stock_research(symbol, period, run_analysis)
-elif tool == "SIP Planner":
-    render_sip_tab()
+elif tool == "Recurring Investment":
+    render_sip_tab(currency_symbol)
 else:
-    render_swp_tab()
+    render_swp_tab(currency_symbol)
