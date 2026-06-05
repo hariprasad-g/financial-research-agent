@@ -16,6 +16,8 @@ An AI-powered financial research assistant built using:
 - Key valuation and balance-sheet metrics
 - Risk assessment
 - Investment recommendations
+- SIP projection planner
+- SWP withdrawal planner
 - Markdown report export
 
 ## Setup
@@ -61,3 +63,14 @@ Generates:
 - Confidence Score
 
 Reports are saved to the `reports/` folder.
+
+## SIP and SWP Planning
+
+The Streamlit app includes calculators for:
+
+- SIP corpus projection with annual step-up
+- SWP corpus depletion and withdrawal sustainability
+- Year-by-year projection tables
+- Conservative guidance for fund-selection and withdrawal-rate decisions
+
+These tools are educational projections and do not provide personalized financial advice.
