@@ -6,7 +6,7 @@ import streamlit as st
 from agents.analyst import analyze
 from reporting import format_sources, save_report
 from tools.news_tool import get_news
-from tools.planning_tool import calculate_age, project_sip, project_swp
+from tools.planning_tool import calculate_age, project_sip, project_swp, required_monthly_for_goal
 from tools.stock_tool import get_price_history, get_stock_info
 
 
@@ -93,7 +93,54 @@ def render_price_chart(history):
 def format_money(value, symbol="$"):
     if value is None:
         return "Unavailable"
-    return f"{symbol}{value:,.0f}"
+    prefix = "-" if value < 0 else ""
+    return f"{prefix}{symbol}{abs(value):,.0f}"
+
+
+RISK_PROFILES = {
+    "Conservative": 6.0,
+    "Moderate": 8.0,
+    "Growth": 10.0,
+    "Aggressive": 12.0,
+}
+
+
+def build_markdown_report(title, rows, currency_symbol):
+    lines = [f"# {title}", ""]
+    lines.append(f"Currency: {currency_symbol}")
+    lines.append("")
+    for label, value in rows:
+        lines.append(f"- **{label}:** {value}")
+    lines.append("")
+    lines.append("Educational projection only. Not financial advice.")
+    return "\n".join(lines)
+
+
+def render_disclaimer():
+    st.caption("Educational projection only. Not financial advice. Returns are assumptions, not guarantees.")
+
+
+def render_region_guidance(region):
+    if region == "India":
+        st.markdown(
+            """
+**India planning checklist**
+
+- SIPs are usually built with mutual funds, index funds, ELSS, NPS, PPF, or hybrid/debt funds depending on the goal.
+- For retirement, separate long-term growth money from near-term withdrawal money.
+- Review expense ratio, exit load, tax treatment, asset allocation, and downside behavior.
+"""
+        )
+    else:
+        st.markdown(
+            """
+**US planning checklist**
+
+- Recurring investments often flow through 401(k), IRA/Roth IRA, HSA, or taxable brokerage accounts.
+- Prioritize employer match, tax-advantaged accounts, low-cost index funds/ETFs, and emergency savings.
+- Review expense ratio, tax location, contribution limits, asset allocation, and withdrawal sequence.
+"""
+        )
 
 
 def render_sip_tab(currency_symbol, region):
@@ -113,6 +160,11 @@ def render_sip_tab(currency_symbol, region):
             "Also called dollar-cost averaging in the US. Projection only; fund selection depends on risk profile, time horizon, costs, and taxes."
         )
 
+    profile_cols = st.columns(2)
+    risk_profile = profile_cols[0].selectbox("Risk profile", list(RISK_PROFILES.keys()), index=3)
+    profile_return = RISK_PROFILES[risk_profile]
+    profile_cols[1].metric("Profile return assumption", f"{profile_return:.1f}%")
+
     starter_cols = st.columns(3)
     starter_monthly = starter_cols[0].number_input(
         "Starter monthly investment",
@@ -131,7 +183,7 @@ def render_sip_tab(currency_symbol, region):
         "Starter expected return",
         min_value=1.0,
         max_value=25.0,
-        value=12.0,
+        value=profile_return,
         step=0.5,
     )
 
@@ -158,7 +210,7 @@ def render_sip_tab(currency_symbol, region):
     st.dataframe(pd.DataFrame(comparison_rows), width="stretch", hide_index=True)
     st.divider()
 
-    render_retirement_tab(currency_symbol, starter_monthly, starter_return)
+    render_retirement_tab(currency_symbol, region, starter_monthly, starter_return, key_prefix="embedded")
     st.divider()
 
     input_cols = st.columns(4)
@@ -211,16 +263,28 @@ def render_sip_tab(currency_symbol, region):
 - In the US, this usually means automated recurring buys into ETFs, mutual funds, a 401(k), IRA, or brokerage account.
 """
         )
+    render_disclaimer()
 
 
-def render_retirement_tab(currency_symbol, default_monthly=1000, default_return=12.0):
+def render_retirement_tab(currency_symbol, region, default_monthly=1000, default_return=12.0, key_prefix="retirement"):
     st.subheader("Retirement Timeline")
-    retirement_cols = st.columns(4)
+    profile_cols = st.columns(3)
+    risk_profile = profile_cols[0].selectbox(
+        "Risk profile",
+        list(RISK_PROFILES.keys()),
+        index=3,
+        key=f"{key_prefix}_risk_profile",
+    )
+    profile_return = RISK_PROFILES[risk_profile]
+    profile_cols[1].metric("Profile return assumption", f"{profile_return:.1f}%")
+
+    retirement_cols = st.columns(5)
     birthday = retirement_cols[0].date_input(
         "Birthday",
         value=date(1995, 1, 1),
         min_value=date(1940, 1, 1),
         max_value=date.today(),
+        key=f"{key_prefix}_birthday",
     )
     retirement_age = retirement_cols[1].number_input(
         "Want to retire at age",
@@ -228,19 +292,29 @@ def render_retirement_tab(currency_symbol, default_monthly=1000, default_return=
         max_value=80,
         value=60,
         step=1,
+        key=f"{key_prefix}_age",
     )
     retirement_monthly = retirement_cols[2].number_input(
         "Monthly until retirement",
         min_value=10,
         value=int(default_monthly),
         step=10,
+        key=f"{key_prefix}_monthly",
     )
     retirement_return = retirement_cols[3].number_input(
         "Retirement expected return",
         min_value=1.0,
         max_value=25.0,
-        value=float(default_return),
+        value=float(default_return or profile_return),
         step=0.5,
+        key=f"{key_prefix}_return",
+    )
+    goal_amount = retirement_cols[4].number_input(
+        "Retirement goal amount",
+        min_value=0,
+        value=1000000 if currency_symbol == "$" else 10000000,
+        step=10000 if currency_symbol == "$" else 100000,
+        key=f"{key_prefix}_goal",
     )
 
     current_age = calculate_age(birthday, date.today())
@@ -264,10 +338,44 @@ def render_retirement_tab(currency_symbol, default_monthly=1000, default_return=
             "Projected at Retirement",
             format_money(retirement_value, currency_symbol),
         )
+        required_monthly = required_monthly_for_goal(goal_amount, years_to_retire, retirement_return)
+        gap = retirement_value - goal_amount
+        goal_cols = st.columns(3)
+        goal_cols[0].metric("Goal Amount", format_money(goal_amount, currency_symbol))
+        goal_cols[1].metric("Monthly Needed for Goal", format_money(required_monthly, currency_symbol))
+        goal_cols[2].metric("Projected Gap", format_money(gap, currency_symbol))
+
+        st.session_state["retirement_projected_value"] = retirement_value
+        st.session_state["retirement_years"] = years_to_retire
+
+        export_rows = [
+            ("Region", region),
+            ("Birthday", birthday.isoformat()),
+            ("Current Age", current_age),
+            ("Retirement Age", retirement_age),
+            ("Years to Retirement", years_to_retire),
+            ("Monthly Contribution", format_money(retirement_monthly, currency_symbol)),
+            ("Return Assumption", f"{retirement_return:.1f}%"),
+            ("Invested by Retirement", format_money(retirement_invested, currency_symbol)),
+            ("Projected at Retirement", format_money(retirement_value, currency_symbol)),
+            ("Goal Amount", format_money(goal_amount, currency_symbol)),
+            ("Monthly Needed for Goal", format_money(required_monthly, currency_symbol)),
+            ("Projected Gap", format_money(gap, currency_symbol)),
+        ]
+        st.download_button(
+            "Download retirement plan",
+            data=build_markdown_report("Retirement Plan", export_rows, currency_symbol),
+            file_name="retirement_plan.md",
+            mime="text/markdown",
+            width="stretch",
+            key=f"{key_prefix}_download",
+        )
     else:
         retirement_metric_cols[2].metric("Invested by Retirement", format_money(0, currency_symbol))
         retirement_metric_cols[3].metric("Projected at Retirement", format_money(0, currency_symbol))
         st.warning("Retirement age is not higher than current age.")
+    render_region_guidance(region)
+    render_disclaimer()
 
 
 def render_swp_tab(currency_symbol, region):
@@ -287,6 +395,11 @@ def render_swp_tab(currency_symbol, region):
     corpus_step = 100000 if is_india else 1000
     withdrawal_default = 40000 if is_india else 1000
     withdrawal_step = 1000 if is_india else 100
+    retirement_value = st.session_state.get("retirement_projected_value")
+    if retirement_value:
+        st.info(f"Using latest retirement projection as a reference: {format_money(retirement_value, currency_symbol)}")
+        corpus_default = int(retirement_value)
+
     corpus = input_cols[0].number_input(
         "Corpus" if is_india else "Portfolio balance",
         min_value=1000,
@@ -353,6 +466,25 @@ def render_swp_tab(currency_symbol, region):
 - For regular income, combine a conservative fixed-income allocation, equity exposure for growth, and periodic rebalancing.
 """
         )
+    export_rows = [
+        ("Region", region),
+        ("Portfolio/Corpus", format_money(corpus, currency_symbol)),
+        ("Monthly Withdrawal", format_money(monthly_withdrawal, currency_symbol)),
+        ("Projection Years", years),
+        ("Return Assumption", f"{annual_return:.1f}%"),
+        ("Withdrawal Inflation", f"{inflation:.1f}%"),
+        ("Total Withdrawn", format_money(withdrawn, currency_symbol)),
+        ("Ending Balance", format_money(ending_balance, currency_symbol)),
+        ("Depleted Month", depleted_month or "No"),
+    ]
+    st.download_button(
+        "Download withdrawal plan",
+        data=build_markdown_report("Withdrawal Plan", export_rows, currency_symbol),
+        file_name="withdrawal_plan.md",
+        mime="text/markdown",
+        width="stretch",
+    )
+    render_disclaimer()
 
 
 def render_stock_research(symbol, period, run_analysis):
@@ -468,6 +600,6 @@ if tool == "Stock Research":
 elif tool in ("Recurring Investment", "SIP Planner"):
     render_sip_tab(currency_symbol, region)
 elif tool == "Retirement Plan":
-    render_retirement_tab(currency_symbol)
+    render_retirement_tab(currency_symbol, region, key_prefix="top_retirement")
 else:
     render_swp_tab(currency_symbol, region)

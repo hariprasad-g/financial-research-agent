@@ -35,6 +35,19 @@ def project_sip(monthly_amount, years, annual_return, annual_step_up=0):
     return value, invested, pd.DataFrame(rows)
 
 
+def required_monthly_for_goal(goal_amount, years, annual_return):
+    months = int(years * 12)
+    if goal_amount <= 0 or months <= 0:
+        return 0
+
+    monthly_rate = annual_return / 100 / 12
+    if monthly_rate == 0:
+        return goal_amount / months
+
+    factor = ((1 + monthly_rate) ** months - 1) / monthly_rate
+    return goal_amount / (factor * (1 + monthly_rate))
+
+
 def project_swp(corpus, monthly_withdrawal, years, annual_return, inflation=0):
     monthly_rate = annual_return / 100 / 12
     inflation_rate = inflation / 100
