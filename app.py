@@ -98,6 +98,51 @@ def render_sip_tab():
     st.subheader("SIP Planner")
     st.caption("Projection only. Fund selection should be based on risk profile, time horizon, costs, and tax situation.")
 
+    starter_cols = st.columns(3)
+    starter_monthly = starter_cols[0].number_input(
+        "Starter monthly investment",
+        min_value=100,
+        value=1000,
+        step=100,
+    )
+    starter_years = starter_cols[1].number_input(
+        "Starter years",
+        min_value=1,
+        max_value=40,
+        value=10,
+        step=1,
+    )
+    starter_return = starter_cols[2].number_input(
+        "Starter expected return",
+        min_value=1.0,
+        max_value=25.0,
+        value=12.0,
+        step=0.5,
+    )
+
+    starter_value, starter_invested, _ = project_sip(starter_monthly, starter_years, starter_return, 0)
+    starter_metric_cols = st.columns(3)
+    starter_metric_cols[0].metric("Starter Invested", format_inr(starter_invested))
+    starter_metric_cols[1].metric("Starter Value", format_inr(starter_value))
+    starter_metric_cols[2].metric("Starter Gains", format_inr(starter_value - starter_invested))
+
+    comparison_rows = []
+    for comparison_years in [5, 10, 15, 20]:
+        value, invested, _ = project_sip(starter_monthly, comparison_years, starter_return, 0)
+        comparison_rows.append(
+            {
+                "Years": comparison_years,
+                "Monthly Investment": round(starter_monthly),
+                "Invested": round(invested),
+                "Projected Value": round(value),
+                "Estimated Gains": round(value - invested),
+            }
+        )
+
+    st.caption("Quick comparison for different investment periods")
+    st.dataframe(pd.DataFrame(comparison_rows), width="stretch", hide_index=True)
+    st.divider()
+
     input_cols = st.columns(4)
     monthly_amount = input_cols[0].number_input("Monthly SIP", min_value=500, value=25000, step=500)
     years = input_cols[1].number_input("Years", min_value=1, max_value=40, value=15, step=1)

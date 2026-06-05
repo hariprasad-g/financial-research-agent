@@ -17,6 +17,7 @@ An AI-powered financial research assistant built using:
 - Risk assessment
 - Investment recommendations
 - SIP projection planner
+- Starter SIP view for small monthly investments such as ₹1,000
 - SWP withdrawal planner
 - Markdown report export
 
@@ -69,6 +70,7 @@ Reports are saved to the `reports/` folder.
 The Streamlit app includes calculators for:
 
 - SIP corpus projection with annual step-up
+- Starter SIP projection for ₹1,000/month-style investing
 - SWP corpus depletion and withdrawal sustainability
 - Year-by-year projection tables
 - Conservative guidance for fund-selection and withdrawal-rate decisions
