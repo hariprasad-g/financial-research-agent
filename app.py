@@ -93,7 +93,7 @@ with st.sidebar:
     st.header("Research")
     symbol = st.text_input("Ticker", value="AAPL", max_chars=12).strip().upper()
     period = st.selectbox("Price history", ["6mo", "1y", "2y", "5y"], index=1)
-    run_analysis = st.button("Run analysis", type="primary", use_container_width=True)
+    run_analysis = st.button("Run analysis", type="primary", width="stretch")
 
 if run_analysis:
     if not symbol:
@@ -153,7 +153,7 @@ if run_analysis:
         if news:
             st.dataframe(
                 build_news_frame(news)[["Title", "Published", "URL"]],
-                use_container_width=True,
+                width="stretch",
                 hide_index=True,
             )
         else:
@@ -169,7 +169,7 @@ if run_analysis:
         data=report_markdown,
         file_name=report_path.name,
         mime="text/markdown",
-        use_container_width=True,
+        width="stretch",
     )
     download_cols[1].caption(f"Saved to `{report_path}`")
 
