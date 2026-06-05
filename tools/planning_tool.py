@@ -1,6 +1,13 @@
 import pandas as pd
 
 
+def calculate_age(birthday, today):
+    age = today.year - birthday.year
+    if (today.month, today.day) < (birthday.month, birthday.day):
+        age -= 1
+    return max(age, 0)
+
+
 def project_sip(monthly_amount, years, annual_return, annual_step_up=0):
     monthly_rate = annual_return / 100 / 12
     step_up_rate = annual_step_up / 100

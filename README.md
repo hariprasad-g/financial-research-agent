@@ -18,6 +18,7 @@ An AI-powered financial research assistant built using:
 - Investment recommendations
 - Recurring investment planner, also known as SIP or dollar-cost averaging
 - Starter view for small monthly investments such as $1,000
+- Retirement timeline using birthday and target retirement age
 - Withdrawal planner, also known as SWP or systematic withdrawals
 - USD and INR display modes
 - Markdown report export
@@ -72,6 +73,7 @@ The Streamlit app includes calculators for:
 
 - Recurring investment projection with annual step-up
 - Starter projection for $1,000/month-style investing
+- Retirement-age projection from birthday and desired retirement age
 - Portfolio withdrawal depletion and sustainability
 - Year-by-year projection tables
 - Conservative guidance for fund-selection and withdrawal-rate decisions
