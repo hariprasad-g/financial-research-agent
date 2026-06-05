@@ -96,17 +96,28 @@ def format_money(value, symbol="$"):
     return f"{symbol}{value:,.0f}"
 
 
-def render_sip_tab(currency_symbol):
-    st.subheader("Recurring Investment Planner")
-    st.caption(
-        "Also called SIP in India or dollar-cost averaging in the US. Projection only; fund selection depends on risk profile, time horizon, costs, and taxes."
-    )
+def render_sip_tab(currency_symbol, region):
+    is_india = region == "India"
+    title = "SIP Planner" if is_india else "Recurring Investment Planner"
+    starter_default = 1000
+    advanced_default = 25000 if is_india else 1000
+    advanced_step = 500 if is_india else 10
+
+    st.subheader(title)
+    if is_india:
+        st.caption(
+            "SIP stands for Systematic Investment Plan. Projection only; fund selection depends on risk profile, time horizon, costs, and taxes."
+        )
+    else:
+        st.caption(
+            "Also called dollar-cost averaging in the US. Projection only; fund selection depends on risk profile, time horizon, costs, and taxes."
+        )
 
     starter_cols = st.columns(3)
     starter_monthly = starter_cols[0].number_input(
         "Starter monthly investment",
         min_value=10,
-        value=1000,
+        value=starter_default,
         step=10,
     )
     starter_years = starter_cols[1].number_input(
@@ -205,7 +216,13 @@ def render_sip_tab(currency_symbol):
     st.divider()
 
     input_cols = st.columns(4)
-    monthly_amount = input_cols[0].number_input("Monthly investment", min_value=10, value=1000, step=10)
+    monthly_label = "Monthly SIP" if is_india else "Monthly investment"
+    monthly_amount = input_cols[0].number_input(
+        monthly_label,
+        min_value=10,
+        value=advanced_default,
+        step=advanced_step,
+    )
     years = input_cols[1].number_input("Years", min_value=1, max_value=40, value=15, step=1)
     annual_return = input_cols[2].number_input("Expected return", min_value=1.0, max_value=25.0, value=12.0, step=0.5)
     annual_step_up = input_cols[3].number_input("Annual step-up", min_value=0.0, max_value=25.0, value=5.0, step=0.5)
@@ -225,25 +242,60 @@ def render_sip_tab(currency_symbol):
 
     st.markdown(
         """
+**Useful SIP rules**""" if is_india else """
 **Useful recurring investment rules**
+"""
+    )
+
+    if is_india:
+        st.markdown(
+            """
 
 - For long-term goals, diversified equity index or flexi-cap style funds are usually more suitable than narrow themes.
 - Prefer low expense ratio, consistent rolling returns, clean downside behavior, and an investment horizon of 5+ years.
 - Increasing the monthly amount over time often matters more than chasing the highest past return.
+"""
+        )
+    else:
+        st.markdown(
+            """
+- For long-term goals, diversified equity index funds or broad-market ETFs are usually more suitable than narrow themes.
+- Prefer low expense ratio, consistent behavior, tax efficiency, and an investment horizon of 5+ years.
+- Increasing the monthly amount over time often matters more than chasing the highest past return.
 - In the US, this usually means automated recurring buys into ETFs, mutual funds, a 401(k), IRA, or brokerage account.
 """
-    )
+        )
 
 
-def render_swp_tab(currency_symbol):
-    st.subheader("Withdrawal Planner")
-    st.caption(
-        "Also called SWP in India or a systematic withdrawal plan in retirement planning. Projection only; stability depends on sequence risk, taxes, inflation, and withdrawal discipline."
-    )
+def render_swp_tab(currency_symbol, region):
+    is_india = region == "India"
+    st.subheader("SWP Planner" if is_india else "Withdrawal Planner")
+    if is_india:
+        st.caption(
+            "SWP stands for Systematic Withdrawal Plan. Projection only; stability depends on sequence risk, taxes, inflation, and withdrawal discipline."
+        )
+    else:
+        st.caption(
+            "Systematic withdrawals are common in retirement planning. Projection only; stability depends on sequence risk, taxes, inflation, and withdrawal discipline."
+        )
 
     input_cols = st.columns(5)
-    corpus = input_cols[0].number_input("Portfolio balance", min_value=1000, value=100000, step=1000)
-    monthly_withdrawal = input_cols[1].number_input("Monthly withdrawal", min_value=100, value=1000, step=100)
+    corpus_default = 5000000 if is_india else 100000
+    corpus_step = 100000 if is_india else 1000
+    withdrawal_default = 40000 if is_india else 1000
+    withdrawal_step = 1000 if is_india else 100
+    corpus = input_cols[0].number_input(
+        "Corpus" if is_india else "Portfolio balance",
+        min_value=1000,
+        value=corpus_default,
+        step=corpus_step,
+    )
+    monthly_withdrawal = input_cols[1].number_input(
+        "Monthly SWP" if is_india else "Monthly withdrawal",
+        min_value=100,
+        value=withdrawal_default,
+        step=withdrawal_step,
+    )
     years = input_cols[2].number_input("Projection years", min_value=1, max_value=40, value=20, step=1)
     annual_return = input_cols[3].number_input("Expected return ", min_value=1.0, max_value=20.0, value=8.0, step=0.5)
     inflation = input_cols[4].number_input("Withdrawal inflation", min_value=0.0, max_value=15.0, value=4.0, step=0.5)
@@ -254,7 +306,7 @@ def render_swp_tab(currency_symbol):
 
     metric_cols = st.columns(3)
     metric_cols[0].metric("Total Withdrawn", format_money(withdrawn, currency_symbol))
-    metric_cols[1].metric("Ending Portfolio", format_money(ending_balance, currency_symbol))
+    metric_cols[1].metric("Ending Corpus" if is_india else "Ending Portfolio", format_money(ending_balance, currency_symbol))
     if depleted_month:
         metric_cols[2].metric("Corpus Depleted", f"Month {depleted_month}")
     else:
@@ -268,7 +320,8 @@ def render_swp_tab(currency_symbol):
 
     withdrawal_rate = monthly_withdrawal * 12 / corpus
     if withdrawal_rate > 0.06:
-        st.warning("The starting withdrawal rate is above 6%. That can be aggressive for long retirement-style SWP plans.")
+        warning_label = "SWP" if is_india else "withdrawal"
+        st.warning(f"The starting withdrawal rate is above 6%. That can be aggressive for long retirement-style {warning_label} plans.")
     elif withdrawal_rate <= 0.04:
         st.success("The starting withdrawal rate is at or below 4%, which is generally more conservative.")
     else:
@@ -276,13 +329,27 @@ def render_swp_tab(currency_symbol):
 
     st.markdown(
         """
+**Useful SWP rules**""" if is_india else """
 **Useful withdrawal rules**
+"""
+    )
 
+    if is_india:
+        st.markdown(
+            """
+- Keep 1-3 years of withdrawals in liquid or short-duration debt funds to reduce forced selling.
+- Avoid withdrawing heavily from equity funds during deep drawdowns.
+- For regular income, combine debt allocation, conservative hybrid allocation, and periodic rebalancing.
+"""
+        )
+    else:
+        st.markdown(
+            """
 - Keep 1-3 years of withdrawals in cash, money market, CDs, Treasuries, or short-duration bond funds to reduce forced selling.
 - Avoid withdrawing heavily from equity funds during deep drawdowns.
 - For regular income, combine a conservative fixed-income allocation, equity exposure for growth, and periodic rebalancing.
 """
-    )
+        )
 
 
 def render_stock_research(symbol, period, run_analysis):
@@ -374,9 +441,17 @@ def render_stock_research(symbol, period, run_analysis):
 st.title("Financial Research Agent")
 
 with st.sidebar:
-    tool = st.radio("Tool", ["Stock Research", "Recurring Investment", "Withdrawal Planner"])
-    currency = st.radio("Currency", ["USD", "INR"], horizontal=True)
-    currency_symbol = "$" if currency == "USD" else "₹"
+    region = st.radio("Region", ["United States", "India"], horizontal=True)
+    is_india = region == "India"
+    tool_options = ["Stock Research", "SIP Planner", "SWP Planner"] if is_india else [
+        "Stock Research",
+        "Recurring Investment",
+        "Withdrawal Planner",
+    ]
+    tool = st.radio("Tool", tool_options)
+    currency_options = ["INR", "USD"] if is_india else ["USD", "INR"]
+    currency = st.radio("Currency", currency_options, horizontal=True)
+    currency_symbol = "₹" if currency == "INR" else "$"
 
     if tool == "Stock Research":
         st.header("Stock Research")
@@ -386,7 +461,7 @@ with st.sidebar:
 
 if tool == "Stock Research":
     render_stock_research(symbol, period, run_analysis)
-elif tool == "Recurring Investment":
-    render_sip_tab(currency_symbol)
+elif tool in ("Recurring Investment", "SIP Planner"):
+    render_sip_tab(currency_symbol, region)
 else:
-    render_swp_tab(currency_symbol)
+    render_swp_tab(currency_symbol, region)

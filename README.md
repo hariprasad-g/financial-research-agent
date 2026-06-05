@@ -21,6 +21,7 @@ An AI-powered financial research assistant built using:
 - Retirement timeline using birthday and target retirement age
 - Withdrawal planner, also known as SWP or systematic withdrawals
 - USD and INR display modes
+- Region selector for US-first or India-first planner labels and defaults
 - Markdown report export
 
 ## Setup
@@ -78,4 +79,4 @@ The Streamlit app includes calculators for:
 - Year-by-year projection tables
 - Conservative guidance for fund-selection and withdrawal-rate decisions
 
-SIP and SWP are common Indian terms. In the US, similar workflows are usually described as automated recurring investments, dollar-cost averaging, and systematic withdrawals from brokerage or retirement accounts. These tools are educational projections and do not provide personalized financial advice.
+Use the region selector to switch between US labels/defaults and India labels/defaults. SIP and SWP are common Indian terms. In the US, similar workflows are usually described as automated recurring investments, dollar-cost averaging, and systematic withdrawals from brokerage or retirement accounts. These tools are educational projections and do not provide personalized financial advice.
