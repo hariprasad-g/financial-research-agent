@@ -1,4 +1,6 @@
+import base64
 from datetime import date
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
@@ -14,6 +16,66 @@ st.set_page_config(
     page_title="Financial Research Agent",
     layout="wide",
 )
+
+
+def apply_background():
+    image_path = Path(__file__).parent / "assets" / "finance-background.png"
+    if not image_path.exists():
+        return
+
+    encoded_image = base64.b64encode(image_path.read_bytes()).decode()
+    st.markdown(
+        f"""
+<style>
+    .stApp {{
+        background:
+            linear-gradient(rgba(248, 250, 252, 0.68), rgba(248, 250, 252, 0.76)),
+            url("data:image/png;base64,{encoded_image}");
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+    }}
+
+    [data-testid="stAppViewContainer"] {{
+        background: transparent;
+    }}
+
+    [data-testid="stSidebar"] {{
+        background:
+            linear-gradient(rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.88)),
+            url("data:image/png;base64,{encoded_image}");
+        background-size: cover;
+        background-position: left center;
+        backdrop-filter: blur(12px);
+        border-right: 1px solid rgba(15, 23, 42, 0.08);
+    }}
+
+    [data-testid="stSidebar"] > div:first-child {{
+        background: rgba(255, 255, 255, 0.36);
+        backdrop-filter: blur(10px);
+        border-right: 1px solid rgba(15, 23, 42, 0.08);
+    }}
+
+    [data-testid="stHeader"] {{
+        background: rgba(248, 250, 252, 0.74);
+        backdrop-filter: blur(10px);
+    }}
+
+    .main .block-container {{
+        background: rgba(255, 255, 255, 0.78);
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 8px;
+        margin-top: 1rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 18px 60px rgba(15, 23, 42, 0.08);
+    }}
+</style>
+""",
+        unsafe_allow_html=True,
+    )
+
+
+apply_background()
 
 
 def format_number(value, kind="number"):
