@@ -551,7 +551,7 @@ def render_swp_tab(currency_symbol, region):
 
 def render_stock_research(symbol, period, run_analysis):
     if not run_analysis:
-        st.info("Enter a ticker and run analysis.")
+        render_home_dashboard(symbol, region)
         return
 
     if not symbol:
@@ -633,6 +633,41 @@ def render_stock_research(symbol, period, run_analysis):
 
     with st.expander("Source notes"):
         st.markdown(format_sources(news))
+
+
+def render_home_dashboard(symbol, region):
+    is_india = region == "India"
+    st.subheader("Planning Dashboard")
+    st.caption("Choose a tool from the sidebar or run stock research to generate a full AI report.")
+
+    quick_cols = st.columns(4)
+    quick_cols[0].metric("Research ticker", symbol or "AAPL")
+    quick_cols[1].metric("Planning mode", "India" if is_india else "US")
+    quick_cols[2].metric("Risk presets", "4")
+    quick_cols[3].metric("Exports", "Markdown")
+
+    st.markdown(
+        """
+**What you can do here**
+
+- Research a stock with price data, news, risks, and an AI analyst report.
+- Estimate recurring investments and long-term corpus growth.
+- Plan retirement from birthday, retirement age, goal amount, and monthly contribution.
+- Model withdrawals after retirement and export the plan.
+"""
+    )
+
+    allocation_cols = st.columns(3)
+    if is_india:
+        allocation_cols[0].info("Stable base: EPF, PPF, NPS, debt or liquid funds")
+        allocation_cols[1].info("Growth: SIPs in index, flexi-cap, large-cap, or ELSS funds")
+        allocation_cols[2].info("Withdrawals: liquid/debt buffer plus balanced equity exposure")
+    else:
+        allocation_cols[0].info("Stable base: emergency fund, Treasuries, money market, bonds")
+        allocation_cols[1].info("Growth: 401(k), IRA/Roth IRA, index funds, broad-market ETFs")
+        allocation_cols[2].info("Withdrawals: cash buffer plus diversified portfolio drawdown")
+
+    render_disclaimer()
 
 
 st.title("Financial Research Agent")
