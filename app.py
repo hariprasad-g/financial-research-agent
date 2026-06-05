@@ -158,61 +158,7 @@ def render_sip_tab(currency_symbol, region):
     st.dataframe(pd.DataFrame(comparison_rows), width="stretch", hide_index=True)
     st.divider()
 
-    st.subheader("Retirement Timeline")
-    retirement_cols = st.columns(4)
-    birthday = retirement_cols[0].date_input(
-        "Birthday",
-        value=date(1995, 1, 1),
-        min_value=date(1940, 1, 1),
-        max_value=date.today(),
-    )
-    retirement_age = retirement_cols[1].number_input(
-        "Want to retire at age",
-        min_value=30,
-        max_value=80,
-        value=60,
-        step=1,
-    )
-    retirement_monthly = retirement_cols[2].number_input(
-        "Monthly until retirement",
-        min_value=10,
-        value=starter_monthly,
-        step=10,
-    )
-    retirement_return = retirement_cols[3].number_input(
-        "Retirement expected return",
-        min_value=1.0,
-        max_value=25.0,
-        value=starter_return,
-        step=0.5,
-    )
-
-    current_age = calculate_age(birthday, date.today())
-    years_to_retire = max(int(retirement_age - current_age), 0)
-    retirement_metric_cols = st.columns(4)
-    retirement_metric_cols[0].metric("Current Age", current_age)
-    retirement_metric_cols[1].metric("Years to Retirement", years_to_retire)
-
-    if years_to_retire > 0:
-        retirement_value, retirement_invested, _ = project_sip(
-            retirement_monthly,
-            years_to_retire,
-            retirement_return,
-            0,
-        )
-        retirement_metric_cols[2].metric(
-            "Invested by Retirement",
-            format_money(retirement_invested, currency_symbol),
-        )
-        retirement_metric_cols[3].metric(
-            "Projected at Retirement",
-            format_money(retirement_value, currency_symbol),
-        )
-    else:
-        retirement_metric_cols[2].metric("Invested by Retirement", format_money(0, currency_symbol))
-        retirement_metric_cols[3].metric("Projected at Retirement", format_money(0, currency_symbol))
-        st.warning("Retirement age is not higher than current age.")
-
+    render_retirement_tab(currency_symbol, starter_monthly, starter_return)
     st.divider()
 
     input_cols = st.columns(4)
@@ -265,6 +211,63 @@ def render_sip_tab(currency_symbol, region):
 - In the US, this usually means automated recurring buys into ETFs, mutual funds, a 401(k), IRA, or brokerage account.
 """
         )
+
+
+def render_retirement_tab(currency_symbol, default_monthly=1000, default_return=12.0):
+    st.subheader("Retirement Timeline")
+    retirement_cols = st.columns(4)
+    birthday = retirement_cols[0].date_input(
+        "Birthday",
+        value=date(1995, 1, 1),
+        min_value=date(1940, 1, 1),
+        max_value=date.today(),
+    )
+    retirement_age = retirement_cols[1].number_input(
+        "Want to retire at age",
+        min_value=30,
+        max_value=80,
+        value=60,
+        step=1,
+    )
+    retirement_monthly = retirement_cols[2].number_input(
+        "Monthly until retirement",
+        min_value=10,
+        value=int(default_monthly),
+        step=10,
+    )
+    retirement_return = retirement_cols[3].number_input(
+        "Retirement expected return",
+        min_value=1.0,
+        max_value=25.0,
+        value=float(default_return),
+        step=0.5,
+    )
+
+    current_age = calculate_age(birthday, date.today())
+    years_to_retire = max(int(retirement_age - current_age), 0)
+    retirement_metric_cols = st.columns(4)
+    retirement_metric_cols[0].metric("Current Age", current_age)
+    retirement_metric_cols[1].metric("Years to Retirement", years_to_retire)
+
+    if years_to_retire > 0:
+        retirement_value, retirement_invested, _ = project_sip(
+            retirement_monthly,
+            years_to_retire,
+            retirement_return,
+            0,
+        )
+        retirement_metric_cols[2].metric(
+            "Invested by Retirement",
+            format_money(retirement_invested, currency_symbol),
+        )
+        retirement_metric_cols[3].metric(
+            "Projected at Retirement",
+            format_money(retirement_value, currency_symbol),
+        )
+    else:
+        retirement_metric_cols[2].metric("Invested by Retirement", format_money(0, currency_symbol))
+        retirement_metric_cols[3].metric("Projected at Retirement", format_money(0, currency_symbol))
+        st.warning("Retirement age is not higher than current age.")
 
 
 def render_swp_tab(currency_symbol, region):
@@ -443,9 +446,10 @@ st.title("Financial Research Agent")
 with st.sidebar:
     region = st.radio("Region", ["United States", "India"], horizontal=True)
     is_india = region == "India"
-    tool_options = ["Stock Research", "SIP Planner", "SWP Planner"] if is_india else [
+    tool_options = ["Stock Research", "SIP Planner", "Retirement Plan", "SWP Planner"] if is_india else [
         "Stock Research",
         "Recurring Investment",
+        "Retirement Plan",
         "Withdrawal Planner",
     ]
     tool = st.radio("Tool", tool_options)
@@ -463,5 +467,7 @@ if tool == "Stock Research":
     render_stock_research(symbol, period, run_analysis)
 elif tool in ("Recurring Investment", "SIP Planner"):
     render_sip_tab(currency_symbol, region)
+elif tool == "Retirement Plan":
+    render_retirement_tab(currency_symbol)
 else:
     render_swp_tab(currency_symbol, region)
